@@ -26,47 +26,48 @@ inference_times = []
 # 加载模型需要在推理循环之外
 model = torch.load(path[0], map_location=torch.device('cpu'))
 
-    for i in range(a):
-        # ---------------------------输出测试集结果-----------------------------------
-        # 在推理前开始计时
-        start_time = time.time()
-        # 载入模型地址
-        # 载入无噪声数据地址
-        clean_data = GetData.get_csv_data(path[1], i)
-        # 载入噪声数据地址
-        noise_raman_data = GetData.get_csv_data(path[2], i)
-        # 对噪声数据处理，整形
-        noise_raman_data = torch.tensor(noise_raman_data, dtype=torch.float32).reshape(1, 1, num_wavenumber)
-        # 生成输出结果
-        model.eval()
-        with torch.no_grad():
-            output = model(noise_raman_data)
-        output = np.array(output).reshape(num_wavenumber,)
-        # 保存去噪数据
-        Method.save(output, path[3], 'a', num_wavenumber)
+for i in range(a):
+    # ---------------------------输出测试集结果-----------------------------------
+    # 在推理前开始计时
+    start_time = time.time()
+    # 载入模型地址
+    # 载入无噪声数据地址
+    clean_data = GetData.get_csv_data(path[1], i)
+    # 载入噪声数据地址
+    noise_raman_data = GetData.get_csv_data(path[2], i)
+    # 对噪声数据处理，整形
+    noise_raman_data = torch.tensor(noise_raman_data, dtype=torch.float32).reshape(1, 1, num_wavenumber)
+    # 生成输出结果
+    model.eval()
+    with torch.no_grad():
+        output = model(noise_raman_data)
+    output = np.array(output).reshape(num_wavenumber,)
+    # 保存去噪数据
+    Method.save(output, path[3], 'a', num_wavenumber)
 
-        # 推理完成 计算推理时间并添加到列表中
-        end_time = time.time()
-        inference_time = end_time - start_time
-        print(f"The {i}th times Inference_Time: {inference_time} seconds")
-        inference_times.append(inference_time)
+    # 推理完成 计算推理时间并添加到列表中
+    end_time = time.time()
+    inference_time = end_time - start_time
+    print(f"The {i}th times Inference_Time: {inference_time} seconds")
+    inference_times.append(inference_time)
 
-        # 计算信噪比
-        SNR = round(Method.snr(output, output - clean_data), 2)
-        # 计算皮尔逊相关系数
-        p = round(Method.pearson_corr(output, clean_data), 4)
-        snr_sum = SNR + snr_sum
-        p_sum = p + p_sum
-        with open('data/data_SNR075/denoise_data/denoise_data/denoise_data_resnet_d_k7_50.csv', 'a') as file:
-            file.write(f'{SNR}\n')
-        # print(SNR)
-        with open('data/data_SNR075/denoise_data/output/p/p_resnet_d_k9.csv', 'a') as file:
-            file.write(f'{p}\n')
-        # print(p)
+    # 计算信噪比
+    SNR = round(Method.snr(output, output - clean_data), 2)
+    # 计算皮尔逊相关系数
+    p = round(Method.pearson_corr(output, clean_data), 4)
+    snr_sum = SNR + snr_sum
+    p_sum = p + p_sum
+    with open('data/data_SNR075/denoise_data/denoise_data/denoise_data_resnet_d_k7_50.csv', 'a') as file:
+        file.write(f'{SNR}\n')
+    # print(SNR)
+    with open('data/data_SNR075/denoise_data/output/p/p_resnet_d_k9.csv', 'a') as file:
+        file.write(f'{p}\n')
+    # print(p)
 
 # 计算推理速度的平均值
 average_inference_time = sum(inference_times) / len(inference_times)
 print(f"Average Inference Time: {average_inference_time} seconds")
+print(f"Total Inference Time:{inference_times} seconds")
 
 snr_average = snr_sum/200
 p_average = p_sum/200
