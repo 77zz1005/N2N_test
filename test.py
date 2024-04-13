@@ -19,57 +19,70 @@ p_sum = 0
 path = ['data/data_SNR075/pretrained_model/model_resnet_d_k9.pth',                  # 0 模型地址
         'data/data_SNR075/test_data/clean_data.csv',                                    # 1 测试集干净数据地址
         'data/data_SNR075/test_data/noise_data.csv',                                    # 2 测试集噪声数据地址
-        'data/data_SNR075/denoise_data/denoise_data/denoise_data_resnet_d_k7_50.csv',   # 3 测试集去噪后保存地址
+        'data/data_SNR075/denoise_data/denoise_data/denoise_data_resnet_d_k9.csv',   # 3 测试集去噪后保存地址
         'data/data_SNR075/wavenumber/wave_number.csv']                                  # 4 波数地址
 # 记录每次推理时间的列表
 inference_times = []
-# 加载模型需要在推理循环之外
+# 载入模型地址,加载模型需要在推理循环之外
+start_load_model = time.time()
 model = torch.load(path[0], map_location=torch.device('cpu'))
+load_model_time = time.time() - start_load_model
+print(f"Load model finished, Using {load_model_time} seconds")
+# 载入所有测试数据
+start_load_data = time.time()
+clean_data_list = [GetData.get_csv_data(path[1], i) for i in range(a)]
+noise_raman_data_list = [GetData.get_csv_data(path[2], i) for i in range(a)]
+load_data_time = time.time() - start_load_data
+print(f"Load data finished ,Data size:{a}    Using {load_data_time} seconds")
 
-    for i in range(a):
-        # ---------------------------输出测试集结果-----------------------------------
-        # 在推理前开始计时
-        start_time = time.time()
-        # 载入模型地址
-        # 载入无噪声数据地址
-        clean_data = GetData.get_csv_data(path[1], i)
-        # 载入噪声数据地址
-        noise_raman_data = GetData.get_csv_data(path[2], i)
-        # 对噪声数据处理，整形
-        noise_raman_data = torch.tensor(noise_raman_data, dtype=torch.float32).reshape(1, 1, num_wavenumber)
-        # 生成输出结果
-        model.eval()
-        with torch.no_grad():
-            output = model(noise_raman_data)
-        output = np.array(output).reshape(num_wavenumber,)
-        # 保存去噪数据
-        Method.save(output, path[3], 'a', num_wavenumber)
+for i in range(a):
+    # ---------------------------输出测试集结果-----------------------------------
+    # 在推理前开始计时
+    start_time = time.time()
+    # # 载入无噪声数据地址
+    # clean_data = GetData.get_csv_data(path[1], i)
+    # # 载入噪声数据地址
+    # noise_raman_data = GetData.get_csv_data(path[2], i)
+    # # 对噪声数据处理，整形
+    # noise_raman_data = torch.tensor(noise_raman_data, dtype=torch.float32).reshape(1, 1, num_wavenumber)
+    # 无噪声数据
+    clean_data = clean_data_list[i]
+    # 噪声数据
+    noise_raman_data = noise_raman_data_list[i]
+    # 对噪声数据处理，整形
+    noise_raman_data = torch.tensor(noise_raman_data, dtype=torch.float32).reshape(1, 1, num_wavenumber)
+    # 生成输出结果
+    model.eval()
+    with torch.no_grad():
+        output = model(noise_raman_data)
+    output = np.array(output).reshape(num_wavenumber, )
 
-        # 推理完成 计算推理时间并添加到列表中
-        end_time = time.time()
-        inference_time = end_time - start_time
-        print(f"The {i}th times Inference_Time: {inference_time} seconds")
-        inference_times.append(inference_time)
-
-        # 计算信噪比
-        SNR = round(Method.snr(output, output - clean_data), 2)
-        # 计算皮尔逊相关系数
-        p = round(Method.pearson_corr(output, clean_data), 4)
-        snr_sum = SNR + snr_sum
-        p_sum = p + p_sum
-        with open('data/data_SNR075/denoise_data/denoise_data/denoise_data_resnet_d_k7_50.csv', 'a') as file:
-            file.write(f'{SNR}\n')
-        # print(SNR)
-        with open('data/data_SNR075/denoise_data/output/p/p_resnet_d_k9.csv', 'a') as file:
-            file.write(f'{p}\n')
-        # print(p)
+    # 保存去噪数据
+    Method.save(output, path[3], 'a', num_wavenumber)
+    # 推理完成
+    inference_time = time.time() - start_time
+    print(inference_time)
+    inference_times.append(inference_time)
+    # 计算信噪比
+    SNR = round(Method.snr(output, output - clean_data), 2)
+    # 计算皮尔逊相关系数
+    p = round(Method.pearson_corr(output, clean_data), 4)
+    snr_sum = SNR + snr_sum
+    p_sum = p + p_sum
+    with open('data/data_SNR075/denoise_data/denoise_data/denoise_data_resnet_d_k7_50.csv', 'a') as file:
+        file.write(f'{SNR}\n')
+    # print(SNR)
+    with open('data/data_SNR075/denoise_data/output/p/p_resnet_d_k9.csv', 'a') as file:
+        file.write(f'{p}\n')
+    # print(p)
 
 # 计算推理速度的平均值
 average_inference_time = sum(inference_times) / len(inference_times)
 print(f"Average Inference Time: {average_inference_time} seconds")
+print(f"Total Inference Time:{sum(inference_times)} seconds")
 
-snr_average = snr_sum/200
-p_average = p_sum/200
+snr_average = snr_sum/a
+p_average = p_sum/a
 with open('data/data_SNR075/denoise_data/output/snr/snr_resnet_d_k9.csv', 'a') as file:
     file.write(f'{snr_average}\n')
 print(f"snr_average:{snr_average}")
@@ -77,6 +90,7 @@ with open('data/data_SNR075/denoise_data/output/p/p_resnet_d_k9.csv', 'a') as fi
     file.write(f'{p_average}\n')
 print(f"p_average{p_average}")
 file.close()
+
 
 # ---------------------------输出测试集结果-----------------------------------
 #

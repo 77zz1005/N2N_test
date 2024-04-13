@@ -6,7 +6,7 @@ from dataset import RamanDataset
 from model.ResUnet_d_k7 import ResUnet
 
 torch.cuda.empty_cache()
-# 定义CSV文件的路径
+# 定义CSV文件的路径 包含2个光谱数据
 csv_list = ['data/data_SNR100/train_data/noise_data_1.csv',
             'data/data_SNR100/train_data/noise_data_2.csv',
             '',
@@ -44,15 +44,25 @@ for i in range(epoch):
     print("------第 {} 轮训练开始------".format(i+1))
     # 训练步骤开始
     for data in train_dataloader:
-        spectrum_1, spectrum_2 = data
+        spectrum_1, spectrum_2 = data  # 数据，标签
+        # 转移到gpu上
         spectrum_1 = spectrum_1.cuda()
         spectrum_2 = spectrum_2.cuda()
+        # 前向传播
         outputs = model(spectrum_1)
+        # 均方误差损失函数，计算了模型的预测输出 outputs 和目标数据 spectrum_2 之间的均方误差
         loss = loss_fn(outputs, spectrum_2)
+
+        '''TO REVIEW: 正则化'''
+        # L2正则化来约束模型的参数
         l2_regularization = sum(torch.norm(param) ** 2 for param in parameters)
+        # 计算总损失值
         total_loss = loss + lambda_reg * l2_regularization
+        # 梯度清0 初始化
         optimizer.zero_grad()
+        # 反向传播 计算损失函数的梯度，并将结果储存在.grad属性中
         total_loss.backward()
+        # 更新模型参数
         optimizer.step()
 
         total_train_step = total_train_step + 1
