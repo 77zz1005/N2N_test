@@ -18,7 +18,7 @@ snr_sum = 0
 p_sum = 0
 num_wavenumber = 1000
 a = 200
-path = ['model/onnx/model_resnet_d_k9.onnx',  # onnx模型地址
+path = ['model/onnx_FP32IR/model_resnet_d_k9.onnx_FP32IR',  # onnx模型地址
         'data/data_SNR075/test_data/clean_data.csv',  # 测试集干净数据地址
         'data/data_SNR075/test_data/noise_data.csv',  # 测试集噪声数据地址
         'data/data_SNR075/denoise_data/denoise_data/onnx_denoise_data_resnet_d_k9.csv',  # 测试集去噪后保存地址

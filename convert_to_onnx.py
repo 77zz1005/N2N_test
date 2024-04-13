@@ -15,6 +15,6 @@ model.eval()
 example_input = torch.randn(1, 1, 1000).to(device)
 
 # 导出模型为 ONNX 格式
-onnx_path = 'model/onnx/model_resnet_d_k9.onnx'
+onnx_path = 'model/onnx_FP32IR/model_resnet_d_k9.onnx'
 torch.onnx.export(model, example_input, onnx_path, verbose=True)
 
